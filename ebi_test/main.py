@@ -1,40 +1,154 @@
+# coding: utf-8
+
 import discord
-
-TOKEN = 'ODc4MTcwNjQ4NDUzNzQyNjY0.YR9SJg.xdRCm2L_FSXRExh2q3nw730El1U'
+import requests
+from discord.ext import commands
+from pprint import pprint
+import aiohttp
+TOKEN = 'token'
 #えび用テストボットのトークンなのでトークンの書き換えが必要です
-client = discord.Client()
 
-@client.event
-async def on_ready():
-    # 起動したらターミナルにログイン通知が表示される
-    print('login successful')
+headers = {
+    "Authorization": "Bot AAAAA"
+}
 
-@client.event
-async def on_message(message):
-    if message.author.bot:
+
+def returnNormalUrl(channelId):
+    return "https://discordapp.com/api/channels/" + str(channelId) + "/messages"
+
+
+async def notify_callback(id, token):
+    url = "https://discord.com/api/v8/interactions/{0}/{1}/callback".format(id, token)
+    json = {
+        "type": 6
+    }
+    async with aiohttp.ClientSession() as s:
+        async with s.post(url, json=json) as r:
+            if 200 <= r.status < 300:
+                return
+
+
+def normalMessage(msg, content):
+    normal_url = returnNormalUrl(msg["d"]["channel_id"])
+    json = {
+        "content": content
+    }
+    r = requests.post(normal_url, headers=headers, json=json)
+
+
+async def on_socket_response(msg):
+    if msg["t"] != "INTERACTION_CREATE":
         return
-    if message.content == "?盛子様":
-        await message.channel.send('お呼びでしたか？　盛子ですの')
 
-@client.event 
-async def on_message(message):
-    if message.content == "!joinmoriko":
-        if message.author.voice is None:
-            await message.channel.send("どのボイスチャンネルに入れば良いのかしら？")
-            return
-        # ボイスチャンネルに接続する
-        await message.author.voice.channel.connect()
+    pprint(msg)
+    custom_id = msg["d"]["data"]["custom_id"]
 
-        await message.channel.send("ごきげんよう！盛子ですわ！")
+    if custom_id == "click_one":
+        normal_url2 = returnNormalUrl(msg["d"]["channel_id"]) + "/" + msg["d"]["message"]["id"]
+        json2 = {
+            "content": "LEFT",
+            "components": [
+                {
+                    "type": 1,
+                    "components": [
+                        {
+                            "type": 2,
+                            "label": "<",
+                            "style": 1,
+                            "custom_id": "click_one",
+                            "disabled": True
+                        },
+                        {
+                            "type": 2,
+                            "label": ">",
+                            "style": 3,
+                            "custom_id": "click_two",
+                            "disabled": False
+                        },
+                    ]
+                }
+            ]
+        }
+        r2 = requests.patch(normal_url2, headers=headers, json=json2)
+        pprint(r2)
+        await notify_callback(msg["d"]["id"], msg["d"]["token"])
+    elif custom_id == 'click_two':
+        normal_url2 = returnNormalUrl(msg["d"]["channel_id"]) + "/" + msg["d"]["message"]["id"]
+        json2 = {
+            "content": "Right",
+            "components": [
+                {
+                    "type": 1,
+                    "components": [
+                        {
+                            "type": 2,
+                            "label": "<",
+                            "style": 1,
+                            "custom_id": "click_one",
+                            "disabled": False
+                        },
+                        {
+                            "type": 2,
+                            "label": ">",
+                            "style": 3,
+                            "custom_id": "click_two",
+                            "disabled": True
+                        },
+                    ]
 
-    elif message.content == "!leavemoriko":
-        if message.guild.voice_client is None:
-            await message.channel.send("私はどこにも入っていませんわよ！！")
-            return
+                }
+            ]
+        }
+        r2 = requests.patch(normal_url2, headers=headers, json=json2)
+        pprint(r2)
+        await notify_callback(msg["d"]["id"], msg["d"]["token"])
 
-        # 切断する
-        await message.guild.voice_client.disconnect()
 
-        await message.channel.send("ごきげんよう～")
+class MyBot(commands.Bot):
 
-client.run(TOKEN)
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.add_listener(on_socket_response)
+
+
+bot = MyBot(command_prefix='$', description='slash test')
+
+
+@bot.event
+async def on_ready():
+    print("Boot")
+    await bot.change_presence(activity=discord.Game("プロセカ"))
+
+
+@bot.event
+async def on_message(msg):
+    if msg.content == "うんこ":
+        normal_url = returnNormalUrl(msg.channel.id)
+        json = {
+            "content": "LEFT",
+            "components": [
+                {
+                    "type": 1,
+                    "components": [
+                        {
+                            "type": 2,
+                            "label": "<",
+                            "style": 1,
+                            "custom_id": "click_one",
+                            "disabled": True
+                        },
+                        {
+                            "type": 2,
+                            "label": ">",
+                            "style": 3,
+                            "custom_id": "click_two"
+                        },
+                    ]
+
+                }
+            ]
+        }
+        r = requests.post(normal_url, headers=headers, json=json)
+
+
+bot.run(TOKEN)
