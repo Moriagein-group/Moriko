@@ -1,12 +1,21 @@
 #認証部分をやります
 import tweepy
 
+import os
+from os.path import join, dirname
+from dotenv import load_dotenv
+
 def Auth():
-    #認証キーとトークン(/消してください)
-    API_KEY = 'zFMOi/4rwU0Bq54tv8/WFArYdDm' #your API KEY
-    API_SECRET = 'QBDdzVldnx/MiBe7qQ5Ybp2/R8Uf3CJEOJBP/nKLrMiN2rNZONiUT' #your API SECRET KEY
-    ACCESS_TOKEN = '3279591482-oFOs6Uw/gWqyXQdTcfG9Mmf2E/GS36FLMNksyMNpS' #your ACCESS TOKEN
-    ACCESS_TOKEN_SECRET = 'ISOKW8ov/UcwLapW6lX3lG/vQSOKvmGlYl4L8/eGGnysi3qh' #your SECRET ACCESS TOKEN
+
+    # .envファイルに書いた内容を環境変数にセットするよ
+    dotenv_path = join(dirname(__file__), '.env')
+    load_dotenv(verbose=True, dotenv_path=dotenv_path)
+
+    # 環境変数に設定したトークンたちを読み込むよ
+    API_KEY = os.getenv("API_KEY")
+    API_SECRET = os.getenv("API_SECRET")
+    ACCESS_TOKEN = os.getenv("ACCESS_TOKEN")
+    ACCESS_TOKEN_SECRET = os.getenv("ACCESS_TOKEN_SECRET")
 
     # APIの認証
     auth = tweepy.OAuthHandler(API_KEY, API_SECRET)
